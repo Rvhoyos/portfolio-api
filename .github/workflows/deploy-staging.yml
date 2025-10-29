@@ -48,7 +48,8 @@ jobs:
       run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging run --rm flyway
     
     - name: Deploy app (internal only)
-      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging up -d app
+      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging up -d --no-deps --force-recreate app
+
     
     - name: Tail app logs
       run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging logs -n 60 app || true
