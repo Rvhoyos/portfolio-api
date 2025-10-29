@@ -8,7 +8,10 @@ Spring Boot 3.5.7 API for portfolio content (Java 25, Gradle 9, PostgreSQL, Flyw
 ![Postgres](https://img.shields.io/badge/Postgres-18-336791)
 ![Docker](https://img.shields.io/badge/Docker-yes-2496ED)
 
-A Spring Boot service that powers my portfolio site content. The codebase has CI/CD setup from day one: containerized app, versioned DB migrations, and automated deployments to staging & prod.
+A Spring Boot service that powers my portfolio site content. The codebase has CI/CD setup from day one: 
+- containerized app,
+- versioned DB migrations,
+- automated deployments to staging & prod.
 
 ---
 
@@ -23,13 +26,14 @@ A Spring Boot service that powers my portfolio site content. The codebase has CI
 - **staging** branch: `staging`
 - **prod** branch: `main` 
 
-Both environments run as Docker Compose stacks on an internal network (no host ports exposed). Reverse proxy (Caddy) will front the app(s) publicly.
+Both environments run as Docker Compose stacks on an internal network (no host ports exposed).    
+Reverse proxy (Caddy) will front the app(s) publicly under a domain.
 
 ## CI/CD (how it works)
 - **On push** to `staging` or `main`:
   1) Build & tag the Docker image (`:staging` / `:prod`)
   2) Run Flyway migrations for the target environment
-  3) Recreate the app container (prod uses `--no-deps --force-recreate`, staging mirrors this)
+  3) Recreate the app container
 - **Runner labels:** `[self-hosted, Linux, X64]`
 - **Dependency graph** job runs with JDK 21 
 
@@ -46,7 +50,7 @@ Both environments run as Docker Compose stacks on an internal network (no host p
 ## Roadmap
 - Expose via Caddy with **same-origin routing** (`/api/...`)
 - Add health/actuator endpoints and basic endpoint set
-- Observability (logs/metrics) & minimal SLOs
+- Observability (logs/metrics)
 
 ## Development (brief)
 - Java 25 + Gradle users can run locally once endpoints exist.
