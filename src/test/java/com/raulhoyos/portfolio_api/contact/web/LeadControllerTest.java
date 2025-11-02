@@ -45,7 +45,7 @@ class LeadControllerTest {
         String body = """
           {
             "name": "Paul Blart",
-            "email": "raul@example.com",
+            "email": "paul@example.com",
             "org": null,
             "interestSlug": "spa",
             "interest": null,
