@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.raulhoyos.portfolio_api.contact.data.LeadRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-// New Spring Boot 4 package for @AutoConfigureMockMvc
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,6 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Full-context integration test:
  * - Boots the whole app so Flyway runs and real MVC wiring is used.
  * - Posts JSON to the controller and asserts a DB row exists.
+ *
+ * Notes:
+ * - Uses the "dev" profile so we hit your dev DB (as with bootRun).
+ * - Cleans up by deleting the inserted row at the end.
  */
 @SpringBootTest
 @AutoConfigureMockMvc

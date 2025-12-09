@@ -1,16 +1,18 @@
-package com.raulhoyos.portfolio_api.contact.data;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+package com.raulhoyos.portfolio_api.contact.web;
 
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.raulhoyos.portfolio_api.contact.data.Lead;
+import com.raulhoyos.portfolio_api.contact.data.LeadRepository;
 
 /**
  * Integration test for LeadRepository using the dev profile:
