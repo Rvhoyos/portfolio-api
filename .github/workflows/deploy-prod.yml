@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, Linux, X64, portfolio-api]
+    runs-on: [self-hosted, Linux, X64]
     environment: prod
     permissions:
       contents: read
