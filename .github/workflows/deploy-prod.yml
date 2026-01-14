@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, portfolio-api]
     environment: prod
     permissions:
       contents: read
@@ -88,7 +88,7 @@ jobs:
       run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod logs -n 60 app || true
 
   dependency-submission:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64, portfolio-api]
     permissions:
       contents: write
 
