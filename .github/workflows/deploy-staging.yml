@@ -1,18 +1,18 @@
-name: Java CI with Gradle — PROD
+name: Java CI with Gradle — STAGING
 
 concurrency:
-  group: deploy-prod
+  group: deploy-staging
   cancel-in-progress: true
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "staging" ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: [self-hosted, Linux, X64]
-    environment: prod
+    runs-on: [self-hosted, Linux, X64, portfolio-api]
+    environment: staging
     permissions:
       contents: read
 
@@ -32,54 +32,54 @@ jobs:
       run: ./gradlew --no-daemon clean bootJar
 
     - name: Build Docker image (local)
-      run: docker build -t portfolio-api:prod .
+      run: docker build -t portfolio-api:staging .
 
     - name: Ensure deploy dir + isolated network exist
       run: |
-        sudo mkdir -p /opt/portfolio-api-prod
-        sudo mkdir -p /opt/portfolio-api-prod/migrations
-        sudo chown -R "$USER":"$USER" /opt/portfolio-api-prod
+        sudo mkdir -p /opt/portfolio-api
+        sudo mkdir -p /opt/portfolio-api/migrations
+        sudo chown -R "$USER":"$USER" /opt/portfolio-api
 
-        docker network inspect portfolio-api-prod_appnet >/dev/null 2>&1 || {
-          echo "ERROR: Docker network 'portfolio-api-prod_appnet' not found. Aborting." >&2
+        docker network inspect portfolio-api_appnet >/dev/null 2>&1 || {
+          echo "ERROR: Docker network 'portfolio-api_appnet' not found. Aborting." >&2
           exit 1
         }
 
     - name: Write compose (isolated network + localhost port)
       run: |
-        cat > /opt/portfolio-api-prod/compose.yml <<'YAML'
+        cat > /opt/portfolio-api/compose.yml <<'YAML'
         services:
           app:
-            image: portfolio-api:prod
-            container_name: portfolio-api-prod
+            image: portfolio-api:staging
+            container_name: portfolio-api-staging
             restart: unless-stopped
             env_file:
-              - /opt/portfolio-api-prod/.env.prod
+              - /opt/portfolio-api/.env.staging
             ports:
-              - "127.0.0.1:18081:8081"
+              - "127.0.0.1:8081:8081"
             networks:
               - appnet
 
           flyway:
             image: flyway/flyway:latest
-            container_name: portfolio-api-prod-flyway
+            container_name: portfolio-api-staging-flyway
             networks:
               - appnet
 
         networks:
           appnet:
             external: true
-            name: portfolio-api-prod_appnet
+            name: portfolio-api_appnet
         YAML
 
-    - name: Sync migrations from repo to server (prod)
-      run: rsync -a --delete "$GITHUB_WORKSPACE/src/main/resources/db/migration/" "/opt/portfolio-api-prod/migrations/"
+    - name: Sync migrations from repo to server (staging)
+      run: rsync -a --delete "$GITHUB_WORKSPACE/src/main/resources/db/migration/" "/opt/portfolio-api/migrations/"
 
-    - name: Run Flyway migrations (prod DB)
-      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod run --rm flyway
+    - name: Run Flyway migrations (staging DB)
+      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging run --rm flyway
 
     - name: Deploy app (internal only)
-      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod up -d --no-deps --force-recreate app
+      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging up -d --no-deps --force-recreate app
 
     - name: Tail app logs
-      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod logs -n 60 app || true
+      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging logs -n 60 app || true
