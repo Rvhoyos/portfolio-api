@@ -1,25 +1,18 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: Java CI with Gradle
+name: Java CI with Gradle — PROD
 
 concurrency:
-  group: deploy-staging
+  group: deploy-prod
   cancel-in-progress: true
 
 on:
   push:
-    branches: [ "staging" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: [self-hosted, Linux, X64]
-    environment: staging
+    environment: prod
     permissions:
       contents: read
 
@@ -32,8 +25,6 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
 
-    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
-    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
@@ -41,74 +32,54 @@ jobs:
       run: ./gradlew --no-daemon clean bootJar
 
     - name: Build Docker image (local)
-      run: docker build -t portfolio-api:staging .
+      run: docker build -t portfolio-api:prod .
 
     - name: Ensure deploy dir + isolated network exist
       run: |
-        sudo mkdir -p /opt/portfolio-api
-        sudo mkdir -p /opt/portfolio-api/migrations
-        sudo chown -R "$USER":"$USER" /opt/portfolio-api
+        sudo mkdir -p /opt/portfolio-api-prod
+        sudo mkdir -p /opt/portfolio-api-prod/migrations
+        sudo chown -R "$USER":"$USER" /opt/portfolio-api-prod
 
-        docker network inspect portfolio-api_appnet >/dev/null 2>&1 || {
-          echo "ERROR: Docker network 'portfolio-api_appnet' not found. Aborting." >&2
+        docker network inspect portfolio-api-prod_appnet >/dev/null 2>&1 || {
+          echo "ERROR: Docker network 'portfolio-api-prod_appnet' not found. Aborting." >&2
           exit 1
         }
 
     - name: Write compose (isolated network + localhost port)
       run: |
-        cat > /opt/portfolio-api/compose.yml <<'YAML'
+        cat > /opt/portfolio-api-prod/compose.yml <<'YAML'
         services:
           app:
-            image: portfolio-api:staging
-            container_name: portfolio-api-staging
+            image: portfolio-api:prod
+            container_name: portfolio-api-prod
             restart: unless-stopped
             env_file:
-              - /opt/portfolio-api/.env.staging
+              - /opt/portfolio-api-prod/.env.prod
             ports:
-              - "127.0.0.1:8081:8081"
+              - "127.0.0.1:18081:8081"
             networks:
               - appnet
 
           flyway:
             image: flyway/flyway:latest
-            container_name: portfolio-api-staging-flyway
+            container_name: portfolio-api-prod-flyway
             networks:
               - appnet
-            # Command is provided by the workflow step: docker compose ... run --rm flyway
 
         networks:
           appnet:
             external: true
-            name: portfolio-api_appnet
+            name: portfolio-api-prod_appnet
         YAML
 
-    - name: Sync migrations from staging to server
-      run: rsync -a --delete "$GITHUB_WORKSPACE/src/main/resources/db/migration/" "/opt/portfolio-api/migrations/"
+    - name: Sync migrations from repo to server (prod)
+      run: rsync -a --delete "$GITHUB_WORKSPACE/src/main/resources/db/migration/" "/opt/portfolio-api-prod/migrations/"
 
-    - name: Run Flyway migrations (staging DB)
-      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging run --rm flyway
+    - name: Run Flyway migrations (prod DB)
+      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod run --rm flyway
 
     - name: Deploy app (internal only)
-      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging up -d --no-deps --force-recreate app
+      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod up -d --no-deps --force-recreate app
 
     - name: Tail app logs
-      run: docker compose -f /opt/portfolio-api/compose.yml --env-file /opt/portfolio-api/.env.staging logs -n 60 app || true
-
-  dependency-submission:
-    runs-on: [self-hosted, Linux, X64]
-    permissions:
-      contents: write
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-
-    # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
-    # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      run: docker compose -f /opt/portfolio-api-prod/compose.yml --env-file /opt/portfolio-api-prod/.env.prod logs -n 60 app || true
